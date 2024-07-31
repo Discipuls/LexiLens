@@ -1,0 +1,23 @@
+services:
+  tgbot:
+    build: ./TelegramBot
+    container_name: lexilens_bot
+    restart: always
+    depends_on:
+      - seeker
+    networks:
+      - lexilens_bridge
+    environment:
+      - SEEKER_HOST=lexilens_seeker:8080
+  seeker:
+    build: ./Seeker
+    container_name: lexilens_seeker
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - lexilens_bridge
+networks:
+  lexilens_bridge:
+    name: lexilens_bridge
+    driver: bridge
