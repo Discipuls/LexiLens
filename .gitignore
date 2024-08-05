@@ -35,3 +35,6 @@ go.work.sum
 *.vsix
 
 TelegramBot/config.json
+TelegramBot/LexiLensTgBot
+
+Seeker/LexiLensCLI

@@ -11,6 +11,10 @@ type config struct {
 	Bot struct {
 		Token string `json:"token"`
 	} `json:"bot"`
+	Seeker struct {
+		Host string `json:"host"`
+		Port string `json:"port"`
+	} `json:"seeker"`
 }
 
 func GetConfiguration() (conf config, err error) {

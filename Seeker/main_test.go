@@ -13,10 +13,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 				SpeechPart: "Verb",
 				Definitions: []WordDefinition{
 					{
-						Definition: "Tear or pull (something) quickly or forcibly away from something or someone",
+						Definition: []SentencePice{{Value: "Tear or pull (something) quickly or forcibly away from something or someone", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "a fan tried to ", ContainsMainWord: false},
 									{Value: "rip", ContainsMainWord: true},
 									{Value: " his pants ", ContainsMainWord: false},
@@ -25,7 +25,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 								},
 							},
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "countries ", ContainsMainWord: false},
 									{Value: "ripped", ContainsMainWord: true},
 									{Value: " apart by fighting", ContainsMainWord: false},
@@ -34,17 +34,17 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: "Make a long tear or cut in",
+						Definition: []SentencePice{{Value: "Make a long tear or cut in", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "you've ", ContainsMainWord: false},
 									{Value: "ripped", ContainsMainWord: true},
 									{Value: " my jacket", ContainsMainWord: false},
 								},
 							},
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "ripped", ContainsMainWord: true},
 									{Value: " jeans", ContainsMainWord: false},
 								},
@@ -52,10 +52,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: "Make (a hole) by force",
+						Definition: []SentencePice{{Value: "Make (a hole) by force", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "the truck was struck by lightning and had a hole ", ContainsMainWord: false},
 									{Value: "ripped", ContainsMainWord: true},
 									{Value: " out of its roof", ContainsMainWord: false},
@@ -64,10 +64,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: "Come violently apart; tear",
+						Definition: []SentencePice{{Value: "Come violently apart; tear", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "he heard something ", ContainsMainWord: false},
 									{Value: "rip", ContainsMainWord: true},
 								},
@@ -75,13 +75,13 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: "Cut (wood) in the direction of the grain",
+						Definition: []SentencePice{{Value: "Cut (wood) in the direction of the grain", ContainsMainWord: false}},
 					},
 					{
-						Definition: "Move forcefully and rapidly",
+						Definition: []SentencePice{{Value: "Move forcefully and rapidly", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "fire ", ContainsMainWord: false},
 									{Value: "ripped", ContainsMainWord: true},
 									{Value: " through", ContainsMainWord: true},
@@ -91,10 +91,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: "Use a program to copy (a sound sequence on a compact disc) on to a computer's hard drive",
+						Definition: []SentencePice{{Value: "Use a program to copy (a sound sequence on a compact disc) on to a computer's hard drive", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "every Beatles song ever made, ", ContainsMainWord: false},
 									{Value: "ripped", ContainsMainWord: true},
 									{Value: " from my boxed set of CDs", ContainsMainWord: false},
@@ -108,10 +108,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 				SpeechPart: "Noun",
 				Definitions: []WordDefinition{
 					{
-						Definition: "A dissolute immoral person, esp. a man",
+						Definition: []SentencePice{{Value: "A dissolute immoral person, esp. a man", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
-								Pieces: []WordExamplePice{
+								Pieces: []SentencePice{
 									{Value: "“Where is that old ", ContainsMainWord: false},
 									{Value: "rip", ContainsMainWord: true},
 									{Value: "?” a deep voice shouted", ContainsMainWord: false},
@@ -120,10 +120,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: "A mischievous person, esp. a child",
+						Definition: []SentencePice{{Value: "A mischievous person, esp. a child", ContainsMainWord: false}},
 					},
 					{
-						Definition: "A worthless horse",
+						Definition: []SentencePice{{Value: "A worthless horse", ContainsMainWord: false}},
 					},
 				},
 			},
@@ -165,7 +165,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 			expectedDefinitions := expectedEntry.SpeechParts[i].Definitions
 			actualDefinitions := actualEntry.SpeechParts[i].Definitions
 			for j := range expectedDefinitions {
-				if expectedDefinitions[j].Definition != actualDefinitions[j].Definition {
+				if expectedDefinitions[j].Definition[0] != actualDefinitions[j].Definition[0] {
 					t.Fatalf("\nTest failed for word \"%s\": \nWordEntry.SpeechParts[%d].speechPart.definitions[%d].definition"+
 						" doesn't match to expected"+
 						"\nExpected: \"%s\"\nGot: \"%s\"", expectedEntry.Word, i, j,

@@ -1,29 +1,43 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"gorm.io/gorm"
+)
 
 type WordEntry struct {
+	gorm.Model
 	Word        string            `json:"word"`
 	SpeechParts []SpeechPartEntry `json:"speechParts"`
+	BotId       uint
 }
 
 type SpeechPartEntry struct {
+	gorm.Model
 	SpeechPart  string           `json:"SpeechPart"`
 	Definitions []WordDefinition `json:"Definitions"`
+	WordEntryId uint
 }
 
 type WordDefinition struct {
-	Definition string             `json:"Definition"`
-	Examples   []WordUsageExample `json:"Examples"`
+	gorm.Model
+	Definition        []SentencePice     `json:"Definition"`
+	Examples          []WordUsageExample `json:"Examples"`
+	SpeechPartEntryId uint
 }
 
 type WordUsageExample struct {
-	Pieces []WordExamplePice `json:"pieces"`
+	gorm.Model
+	Pieces           []SentencePice `json:"pieces"`
+	WordDefinitionId uint
 }
 
-type WordExamplePice struct {
-	Value            string `json:"value"`
-	ContainsMainWord bool   `json:"containsMainWord"`
+type SentencePice struct {
+	gorm.Model
+	Value              string `json:"value"`
+	ContainsMainWord   bool   `json:"containsMainWord"`
+	WordUsageExampleId uint
 }
 
 type EntryFormatOptions struct {
@@ -34,14 +48,14 @@ type EntryFormatOptions struct {
 func (entry *WordEntry) ToHTML(options *EntryFormatOptions) string {
 	res := ""
 	//res += fmt.Sprintf("<tg-spoiler><b><u>%s</u></b></tg-spoiler>\n\n", entry.Word)
-	for _, speechPart := range entry.SpeechParts {
-		res += fmt.Sprintf("<b>ㅤㅤㅤㅤㅤ%s</b>\n", speechPart.SpeechPart)
+	for i, speechPart := range entry.SpeechParts {
+		res += fmt.Sprintf("<b><u>%s</u></b>\n\n", speechPart.SpeechPart)
 
 		for defIndex, def := range speechPart.Definitions {
 			if defIndex == int(options.DefinitionsLimit) {
 				break
 			}
-			res += fmt.Sprintf("%d) %s\n\n", defIndex+1, def.Definition)
+			res += fmt.Sprintf("%d) %s\n\n", defIndex+1, def.Definition[0])
 			for examplesCount, example := range def.Examples {
 				if examplesCount == int(options.ExamplesLimit) {
 					break
@@ -57,7 +71,9 @@ func (entry *WordEntry) ToHTML(options *EntryFormatOptions) string {
 				res += "</i>\n\n"
 			}
 		}
-		res += "\n"
+		if i != len(entry.SpeechParts)-1 {
+			res += "<s>__________________________________________</s>\n\n"
+		}
 	}
 	return res
 }

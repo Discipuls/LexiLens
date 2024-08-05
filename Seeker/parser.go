@@ -28,11 +28,11 @@ func ParsedoOnlineGoogleDictionary(body []byte) (entry WordEntry, err error) {
 	var processPage func(*html.Node) error
 	processPage = func(currentNode *html.Node) error {
 		if currentNode.Type == html.ElementNode && currentNode.Data == "b" {
-			 parseNode(currentNode, &entry)
+			parseNode(currentNode, &entry)
 		}
 
 		if currentNode.Type == html.ElementNode && currentNode.Data == "li" {
-			 parseNode(currentNode, &entry)
+			parseNode(currentNode, &entry)
 		}
 
 		for childNode := currentNode.FirstChild; childNode != nil; childNode = childNode.NextSibling {
@@ -68,7 +68,7 @@ func parseNode(node *html.Node, entry *WordEntry) error {
 				fmt.Println(err.Error())
 			}
 
-			examplePieces := extractExamplePieces(exampleNode)
+			examplePieces := extractSentencePieces(exampleNode)
 
 			err = entry.addWordExamplePieces(examplePieces)
 			if err != nil {
@@ -95,13 +95,20 @@ func extractDefinition(node *html.Node) *WordDefinition {
 	if node.Parent.Parent.Data == "ol" && node.Parent.Parent.Parent.Data == "div" {
 		for _, a := range node.Parent.Parent.Parent.Attr {
 			if a.Key == "class" && a.Val == "std" {
-				definition := WordDefinition{Definition: node.FirstChild.Data[1 : len(node.FirstChild.Data)-1]}
+				definition := WordDefinition{Definition: extractSentencePieces(node)}
+				//definition := WordDefinition{Definition: node.FirstChild.Data[1 : len(node.FirstChild.Data)-1]}
 				return &definition
 			}
 		}
 	}
 	return nil
 }
+
+// func extractDefinitionPieces(definitionNode *html.Node) []SentencePice {
+// 	for definitionNode.FirstChild != nil {
+
+// 	}
+// }
 
 func extractExampleNode(node *html.Node) *html.Node {
 	if node.Parent.Data == "ul" && node.Parent.Parent.Data == "div" {
@@ -114,8 +121,8 @@ func extractExampleNode(node *html.Node) *html.Node {
 	return nil
 }
 
-func extractExamplePieces(exampleNode *html.Node) []WordExamplePice {
-	examplePieces := make([]WordExamplePice, 0)
+func extractSentencePieces(exampleNode *html.Node) []SentencePice {
+	examplePieces := make([]SentencePice, 0)
 
 	for exampleNode.FirstChild != nil {
 		examplePieceNodes := make([]*html.Node, 0)
@@ -139,7 +146,7 @@ func extractExamplePieces(exampleNode *html.Node) []WordExamplePice {
 
 		}
 		for _, examplePieceNode := range examplePieceNodes {
-			examplePiece := WordExamplePice{
+			examplePiece := SentencePice{
 				Value:            examplePieceNode.FirstChild.Data,
 				ContainsMainWord: examplePieceNode.Data == "em"}
 
@@ -149,7 +156,9 @@ func extractExamplePieces(exampleNode *html.Node) []WordExamplePice {
 				examplePiece.Value = strings.ReplaceAll(examplePiece.Value, "  ", " ")
 			}
 
-			examplePieces = append(examplePieces, examplePiece)
+			if examplePiece.Value != "" && examplePiece.Value != " " {
+				examplePieces = append(examplePieces, examplePiece)
+			}
 		}
 		exampleNode.RemoveChild(exampleNode.FirstChild)
 

@@ -38,7 +38,7 @@ func (wordEntry *WordEntry) addWordUsageExample() error {
 	return nil
 }
 
-func (wordEntry *WordEntry) addWordExamplePieces(pieces []WordExamplePice) error {
+func (wordEntry *WordEntry) addWordExamplePieces(pieces []SentencePice) error {
 	if len(wordEntry.SpeechParts) == 0 {
 		return errors.New("WordEntry error: attempting to add wordExamplePieces to entry with 0 speechParts")
 	}
@@ -68,7 +68,7 @@ func (wordEntry *WordEntry) addWordExamplePieces(pieces []WordExamplePice) error
 	return nil
 }
 
-func normalizeWordExamplePieces(pieces* []WordExamplePice){
+func normalizeWordExamplePieces(pieces *[]SentencePice) {
 	FirstExamplePiece := &(*pieces)[0]
 	if FirstExamplePiece.Value[0] == '-' {
 		FirstExamplePiece.Value = strings.Replace(FirstExamplePiece.Value, "-", "", 1)
@@ -89,15 +89,15 @@ type SpeechPartEntry struct {
 }
 
 type WordDefinition struct {
-	Definition string             `json:"Definition"`
+	Definition []SentencePice     `json:"Definition"`
 	Examples   []WordUsageExample `json:"Examples"`
 }
 
 type WordUsageExample struct {
-	Pieces []WordExamplePice `json:"pieces"`
+	Pieces []SentencePice `json:"pieces"`
 }
 
-type WordExamplePice struct {
+type SentencePice struct {
 	Value            string `json:"value"`
 	ContainsMainWord bool   `json:"containsMainWord"`
 }
