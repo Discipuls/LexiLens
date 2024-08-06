@@ -80,7 +80,7 @@ func parseNode(node *html.Node, entry *WordEntry) error {
 }
 
 func extractSpeechPart(node *html.Node) *SpeechPartEntry {
-	if node.FirstChild.Type == html.TextNode {
+	if node.FirstChild != nil && node.FirstChild.Type == html.TextNode {
 		for _, a := range node.Parent.Attr {
 			if a.Key == "id" && a.Val == "forEmbed" {
 				speechPart := SpeechPartEntry{SpeechPart: node.FirstChild.Data[0 : len(node.FirstChild.Data)-1]}
@@ -96,6 +96,7 @@ func extractDefinition(node *html.Node) *WordDefinition {
 		for _, a := range node.Parent.Parent.Parent.Attr {
 			if a.Key == "class" && a.Val == "std" {
 				definition := WordDefinition{Definition: extractSentencePieces(node)}
+				//definition := WordDefinition{}
 				//definition := WordDefinition{Definition: node.FirstChild.Data[1 : len(node.FirstChild.Data)-1]}
 				return &definition
 			}
@@ -121,47 +122,45 @@ func extractExampleNode(node *html.Node) *html.Node {
 	return nil
 }
 
-func extractSentencePieces(exampleNode *html.Node) []SentencePice {
-	examplePieces := make([]SentencePice, 0)
+type checkNode func(node *html.Node) bool
 
-	for exampleNode.FirstChild != nil {
-		examplePieceNodes := make([]*html.Node, 0)
-		if exampleNode.FirstChild.Type == html.TextNode {
-
-			examplePieceNodes = append(examplePieceNodes, exampleNode)
-		} else if exampleNode.FirstChild.Type == html.ElementNode &&
-			exampleNode.FirstChild.FirstChild.Type == html.TextNode {
-
-			examplePieceNodes = append(examplePieceNodes, exampleNode.FirstChild)
-		} else if exampleNode.FirstChild.Type == html.ElementNode &&
-			exampleNode.FirstChild.FirstChild.Type == html.ElementNode &&
-			exampleNode.FirstChild.FirstChild.FirstChild.Type == html.TextNode {
-
-			examplePieceNodes = append(examplePieceNodes, exampleNode.FirstChild.FirstChild)
-
-			exampleNode.FirstChild.RemoveChild(exampleNode.FirstChild.FirstChild)
-			if exampleNode.FirstChild.FirstChild != nil {
-				examplePieceNodes = append(examplePieceNodes, exampleNode.FirstChild)
-			}
-
+func extractChildNodes(parent *html.Node, checker checkNode) []*html.Node {
+	res := make([]*html.Node, 0)
+	for fc := parent.FirstChild; fc != nil; fc = fc.NextSibling {
+		if checker(fc) {
+			res = append(res, fc)
 		}
-		for _, examplePieceNode := range examplePieceNodes {
-			examplePiece := SentencePice{
-				Value:            examplePieceNode.FirstChild.Data,
-				ContainsMainWord: examplePieceNode.Data == "em"}
-
-			examplePiece.Value = strings.ReplaceAll(examplePiece.Value, "\n", "")
-			examplePiece.Value = strings.ReplaceAll(examplePiece.Value, "                                ", " ")
-			for strings.Contains(examplePiece.Value, "  ") {
-				examplePiece.Value = strings.ReplaceAll(examplePiece.Value, "  ", " ")
-			}
-
-			if examplePiece.Value != "" && examplePiece.Value != " " {
-				examplePieces = append(examplePieces, examplePiece)
-			}
-		}
-		exampleNode.RemoveChild(exampleNode.FirstChild)
-
 	}
-	return examplePieces
+	return res
+}
+
+func extractSentencePieces(source *html.Node) []SentencePice {
+	sentencePieces := make([]SentencePice, 0)
+
+	for child := source.FirstChild; child != nil; child = child.NextSibling {
+		if child.Data == "ul" || child.Data == "div" {
+			continue
+		}
+		if child.Type == html.TextNode {
+			sentencePieces = append(sentencePieces, SentencePice{Value: child.Data, ContainsMainWord: source.Data == "em"})
+		} else if child.FirstChild != nil && child.Type == html.ElementNode {
+			sentencePieces = append(sentencePieces, extractSentencePieces(child)...)
+		}
+	}
+	return clearSentencePieces(sentencePieces)
+}
+
+func clearSentencePieces(pieces []SentencePice) []SentencePice {
+	res := make([]SentencePice, 0)
+	for _, piece := range pieces {
+		piece.Value = strings.ReplaceAll(piece.Value, "\n", "")
+		piece.Value = strings.ReplaceAll(piece.Value, "                                ", " ")
+		for strings.Contains(piece.Value, "  ") {
+			piece.Value = strings.ReplaceAll(piece.Value, "  ", " ")
+		}
+		if piece.Value != "" && piece.Value != " " {
+			res = append(res, piece)
+		}
+	}
+	return res
 }

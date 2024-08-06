@@ -165,11 +165,12 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 			expectedDefinitions := expectedEntry.SpeechParts[i].Definitions
 			actualDefinitions := actualEntry.SpeechParts[i].Definitions
 			for j := range expectedDefinitions {
-				if expectedDefinitions[j].Definition[0] != actualDefinitions[j].Definition[0] {
+				
+				if expectedDefinitions[j].Definition[0].Value != actualDefinitions[j].Definition[0].Value {
 					t.Fatalf("\nTest failed for word \"%s\": \nWordEntry.SpeechParts[%d].speechPart.definitions[%d].definition"+
 						" doesn't match to expected"+
 						"\nExpected: \"%s\"\nGot: \"%s\"", expectedEntry.Word, i, j,
-						expectedDefinitions[j].Definition, actualDefinitions[j].Definition)
+						expectedDefinitions[j].Definition[0].Value, actualDefinitions[j].Definition[0].Value)
 				}
 			}
 		}
