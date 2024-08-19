@@ -1,4 +1,4 @@
-module github.com/Discipuls/LexiLens
+module github.com/Discipuls/LexiLens/Lexi
 
 go 1.22.5
 
