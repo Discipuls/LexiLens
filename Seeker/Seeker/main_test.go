@@ -1,4 +1,4 @@
-package main
+package seeker
 
 import (
 	"testing"
@@ -13,7 +13,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 				SpeechPart: "Verb",
 				Definitions: []WordDefinition{
 					{
-						Definition: []SentencePice{{Value: "Tear or pull (something) quickly or forcibly away from something or someone", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Tear or pull (something) quickly or forcibly away from something or someone", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -34,7 +34,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: []SentencePice{{Value: "Make a long tear or cut in", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Make a long tear or cut in", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -52,7 +52,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: []SentencePice{{Value: "Make (a hole) by force", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Make (a hole) by force", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -64,7 +64,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: []SentencePice{{Value: "Come violently apart; tear", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Come violently apart; tear", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -75,10 +75,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: []SentencePice{{Value: "Cut (wood) in the direction of the grain", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Cut (wood) in the direction of the grain", ContainsMainWord: false}},
 					},
 					{
-						Definition: []SentencePice{{Value: "Move forcefully and rapidly", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Move forcefully and rapidly", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -91,7 +91,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: []SentencePice{{Value: "Use a program to copy (a sound sequence on a compact disc) on to a computer's hard drive", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "Use a program to copy (a sound sequence on a compact disc) on to a computer's hard drive", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -108,7 +108,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 				SpeechPart: "Noun",
 				Definitions: []WordDefinition{
 					{
-						Definition: []SentencePice{{Value: "A dissolute immoral person, esp. a man", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "A dissolute immoral person, esp. a man", ContainsMainWord: false}},
 						Examples: []WordUsageExample{
 							{
 								Pieces: []SentencePice{
@@ -120,10 +120,10 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 						},
 					},
 					{
-						Definition: []SentencePice{{Value: "A mischievous person, esp. a child", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "A mischievous person, esp. a child", ContainsMainWord: false}},
 					},
 					{
-						Definition: []SentencePice{{Value: "A worthless horse", ContainsMainWord: false}},
+						Definition: []DefinitionPiece{{Value: "A worthless horse", ContainsMainWord: false}},
 					},
 				},
 			},
@@ -165,7 +165,7 @@ func TestDodoOnlineGoogleDictionary(t *testing.T) {
 			expectedDefinitions := expectedEntry.SpeechParts[i].Definitions
 			actualDefinitions := actualEntry.SpeechParts[i].Definitions
 			for j := range expectedDefinitions {
-				
+
 				if expectedDefinitions[j].Definition[0].Value != actualDefinitions[j].Definition[0].Value {
 					t.Fatalf("\nTest failed for word \"%s\": \nWordEntry.SpeechParts[%d].speechPart.definitions[%d].definition"+
 						" doesn't match to expected"+

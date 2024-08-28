@@ -1,4 +1,4 @@
-package main
+package seeker
 
 import (
 	"bytes"
@@ -95,7 +95,15 @@ func extractDefinition(node *html.Node) *WordDefinition {
 	if node.Parent.Parent.Data == "ol" && node.Parent.Parent.Parent.Data == "div" {
 		for _, a := range node.Parent.Parent.Parent.Attr {
 			if a.Key == "class" && a.Val == "std" {
-				definition := WordDefinition{Definition: extractSentencePieces(node)}
+				pieces := extractSentencePieces(node)
+				var definitionPieces []DefinitionPiece
+				for _, piece := range pieces {
+					definitionPieces = append(definitionPieces, DefinitionPiece{
+						Value:            piece.Value,
+						ContainsMainWord: piece.ContainsMainWord,
+					})
+				}
+				definition := WordDefinition{Definition: definitionPieces}
 				//definition := WordDefinition{}
 				//definition := WordDefinition{Definition: node.FirstChild.Data[1 : len(node.FirstChild.Data)-1]}
 				return &definition

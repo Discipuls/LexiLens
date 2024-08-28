@@ -38,3 +38,11 @@ TelegramBot/config.json
 TelegramBot/LexiLensTgBot
 
 Seeker/LexiLensCLI
+
+Bot/binary/*
+.env
+config.json
+config_prod.json
+config_main_dev.json
+
+*.exe

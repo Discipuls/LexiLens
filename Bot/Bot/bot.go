@@ -10,36 +10,7 @@ import (
 	"sync"
 
 	"github.com/NicoNex/echotron/v3"
-	"gorm.io/gorm"
 )
-
-type BotController struct {
-	Token       string
-	MiniAppURL  string
-	Db          *gorm.DB
-	BotUsername string
-	mode        string
-	seekerUrl   string
-}
-
-type Bot struct {
-	gorm.Model
-	echotron.API     `gorm:"-"`
-	ChatID           int64
-	Notifications    bool     `gorm:"default:true"`
-	db               *gorm.DB `gorm:"-"`
-	selfUsername     string
-	mode             string
-	seekerUrl        string
-	WordEntries      []*BotWordEntry
-	currentWord      int
-	sessionWords     []*BotWordEntry
-	sessionsWordCopy []*BotWordEntry
-}
-
-type SendOptions struct {
-	*echotron.MessageOptions
-}
 
 var Wg sync.WaitGroup
 

@@ -18,7 +18,8 @@ func ConnectDatabase(conf *config) (*gorm.DB, error) {
 	if err != nil {
 		log.Println("Error opening database: ", err.Error())
 	}
-	err = db.AutoMigrate(&Bot{}, &WordEntry{}, &SpeechPartEntry{}, &WordDefinition{}, &DefinitionPiece{}, &WordUsageExample{}, &SentencePice{}, &BotWordEntry{})
+	err = db.AutoMigrate(&Bot{}, &WordEntry{}, &SpeechPartEntry{}, &WordDefinition{}, &DefinitionPiece{}, &WordUsageExample{}, &SentencePice{}, &UsersWord{},
+		&SessionOptions{})
 	if err != nil {
 		log.Println("Error: db.Automigrate: ", err.Error())
 	}
@@ -28,22 +29,25 @@ func ConnectDatabase(conf *config) (*gorm.DB, error) {
 
 func insertBotToDbIfNotExists(db *gorm.DB, chatID int64) *Bot {
 	var tryBot Bot
-	db.Preload("WordEntries").FirstOrCreate(
+	tx := db.Preload("StoredUsersWords").Preload("SessionSettings").FirstOrCreate(
 		&tryBot, Bot{ChatID: chatID},
 	)
+	if tx.Error != nil {
+		log.Println("insertBotToDbIfNotExists error: ", tx.Error.Error())
+	}
 	return &tryBot
 }
 
-func insertBotWordEntryToDbIfNotExists(db *gorm.DB, entry BotWordEntry) *BotWordEntry {
-	var tryEntry BotWordEntry
+func insertSessionItemToDbIfNotExists(db *gorm.DB, item UsersWord) *UsersWord {
+	var dbItem UsersWord
 	db.FirstOrCreate(
-		&tryEntry, entry,
+		&dbItem, item,
 	)
-	return &tryEntry
+	return &dbItem
 }
 
-func SaveBotWordEntryInDb(db *gorm.DB, entry *BotWordEntry) {
-	tx := db.Save(*entry)
+func SaveBotWordEntryInDb(db *gorm.DB, item *UsersWord) {
+	tx := db.Save(*item)
 	if tx.Error != nil {
 		log.Println("SaveBotWordEntryInDb error: ", tx.Error.Error())
 	}
@@ -75,6 +79,19 @@ func SaveBotToDb(db *gorm.DB, b *Bot) {
 func SaveBotToDbWg(db *gorm.DB, b *Bot) {
 	defer Wg.Done()
 	tx := db.Save(&b)
+	if tx.Error != nil {
+		log.Println(tx.Error.Error())
+	}
+}
+
+func SaveSessionOptionsToDb(db *gorm.DB, opts *SessionOptions) {
+	Wg.Add(1)
+	go SaveSessionOptionsToDbWg(db, opts)
+}
+
+func SaveSessionOptionsToDbWg(db *gorm.DB, opts *SessionOptions) {
+	defer Wg.Done()
+	tx := db.Save(&opts)
 	if tx.Error != nil {
 		log.Println(tx.Error.Error())
 	}

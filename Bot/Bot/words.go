@@ -2,6 +2,7 @@ package bot
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,110 +14,114 @@ import (
 	"gorm.io/gorm"
 )
 
-type WordEntry struct {
-	gorm.Model
-	Word        string            `json:"word"`
-	SpeechParts []SpeechPartEntry `json:"speechParts"`
-	BotId       uint
-}
-
-type SpeechPartEntry struct {
-	gorm.Model
-	SpeechPart  string           `json:"SpeechPart"`
-	Definitions []WordDefinition `json:"Definitions"`
-	WordEntryId uint
-}
-
-type WordDefinition struct {
-	gorm.Model
-	Definition        []DefinitionPiece  `json:"Definition" gorm:"foreignKey:DefinitionId;references:ID"`
-	WordUsageExamples []WordUsageExample `json:"Examples" gorm:"foreignKey:WordDefinitionId;references:ID"`
-	SpeechPartEntryId uint
-}
-
-type WordUsageExample struct {
-	gorm.Model
-	Pieces           []SentencePice `json:"pieces"  gorm:"foreignKey:WordUsageExampleId;references:ID"`
-	WordDefinitionId uint
-}
-
-type SentencePice struct {
-	gorm.Model
-	Value              string `json:"value"`
-	ContainsMainWord   bool   `json:"containsMainWord"`
-	WordUsageExampleId uint
-}
-
-type DefinitionPiece struct {
-	gorm.Model
-	Value            string `json:"value"`
-	ContainsMainWord bool   `json:"containsMainWord"`
-	DefinitionId     uint
-}
-
-type EntryFormatOptions struct {
-	ExamplesLimit    uint
-	DefinitionsLimit uint
-	IsWordHidden     bool
-}
-
-type BotWordEntry struct {
-	gorm.Model
-	BotId               uint
-	Word                string
-	rememberRating      int
-	sessionMistakes     uint
-	usedInSession       bool
-	LastSessionMistakes uint
-	IsNewWord           bool `gorm:"default:true"`
-}
-
-func removeBotWordEntry(slice []*BotWordEntry, index int) []*BotWordEntry {
+func removeUsersWord(slice []*UsersWord, index int) []*UsersWord {
 	if index == 0 {
 		return slice[index+1:]
 	}
 	return append(slice[:index], slice[index+1:]...)
 }
 
-func (b *Bot) LoadSessionWords(amount uint) {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(b.WordEntries), func(i, j int) {
-		b.WordEntries[i], b.WordEntries[j] = b.WordEntries[j], b.WordEntries[i]
-	})
-
-	for i, w := range b.WordEntries {
-		b.WordEntries[i].usedInSession = false
-		b.WordEntries[i].sessionMistakes = 0
-		b.WordEntries[i].rememberRating = 0
-		if w.IsNewWord {
-			b.sessionWords = append(b.sessionWords, w)
-			b.WordEntries[i].usedInSession = true
-			b.WordEntries[i].rememberRating = -1
-			amount--
-			if amount == 0 {
-				return
-			}
+func (b *Bot) LoadSessionWordEntries() error {
+	b.sessionWordEntries = make([]*WordEntry, 0)
+	for _, w := range b.sessionWords {
+		wordEntry, err := b.LoadWordEntry(w.Word)
+		if err != nil {
+			return errors.New("LoadSessionWordEntries error: " + err.Error())
 		}
-
+		b.sessionWordEntries = append(b.sessionWordEntries, wordEntry)
 	}
-
-	sort.Slice(b.WordEntries, func(i int, j int) bool {
-		return b.WordEntries[i].LastSessionMistakes > b.WordEntries[j].LastSessionMistakes
-	})
-	for i, w := range b.WordEntries {
-		if !w.usedInSession {
-			b.sessionWords = append(b.sessionWords, w)
-			b.WordEntries[i].usedInSession = true
-			amount--
-			if amount == 0 {
-				return
-			}
-		}
-
-	}
+	return nil
 }
 
-func (b *Bot) GetWordEntry(word string) (*WordEntry, error) {
+func (b *Bot) LoadSessionWords(amount uint) {
+	b.sessionWords = make([]*UsersWord, 0)
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(b.StoredUsersWords), func(i, j int) {
+		b.StoredUsersWords[i], b.StoredUsersWords[j] = b.StoredUsersWords[j], b.StoredUsersWords[i]
+	})
+	for i, w := range b.StoredUsersWords {
+		b.StoredUsersWords[i].usedInSession = false
+		b.StoredUsersWords[i].sessionMistakes = 0
+		b.StoredUsersWords[i].rememberRating = 0
+		if w.IsNewWord {
+			b.sessionWords = append(b.sessionWords, w)
+			b.StoredUsersWords[i].usedInSession = true
+			b.StoredUsersWords[i].rememberRating = -1
+			amount--
+			if amount == 0 {
+				break
+			}
+		}
+
+	}
+
+	sort.Slice(b.StoredUsersWords, func(i int, j int) bool {
+		return b.StoredUsersWords[i].LastSessionMistakes >= b.StoredUsersWords[j].LastSessionMistakes
+	})
+	for i, w := range b.StoredUsersWords {
+		if !w.usedInSession {
+			if amount == 0 {
+				break
+			}
+			b.sessionWords = append(b.sessionWords, w)
+			b.StoredUsersWords[i].usedInSession = true
+			amount--
+		}
+
+	}
+	reversedSessionWords := make([]*UsersWord, 0)
+	if b.SessionSettings.WithWordToDefinitionCards {
+		reversedSessionWords = make([]*UsersWord, len(b.sessionWords))
+		for i, wordEntry := range b.sessionWords {
+			reversedEntry := *wordEntry
+			reversedEntry.isFrontCard = true
+			reversedEntry.reference = wordEntry
+			reversedSessionWords[i] = &reversedEntry
+		}
+	}
+
+	if b.SessionSettings.WithDefinitionToWordCards {
+		b.sessionWords = append(b.sessionWords, reversedSessionWords...)
+	} else {
+		b.sessionWords = reversedSessionWords
+	}
+
+	rand.Shuffle(len(b.sessionWords), func(i, j int) {
+		b.sessionWords[i], b.sessionWords[j] = b.sessionWords[j], b.sessionWords[i]
+	})
+
+}
+
+func (b *Bot) LoadWordEntry(word string) (*WordEntry, error) {
+	wordEntry, dbErr := FindWordEntry(b.db, word)
+	if dbErr != nil {
+		var err error
+		wordEntry, err = b.GetSeekerWordEntry(word)
+		if err != nil {
+			return &WordEntry{}, errors.New("LoadWordEntry error: " + err.Error())
+		}
+		if len(wordEntry.SpeechParts) == 0 {
+			return &WordEntry{}, errors.New("LoadWordEntry error: seeker empty word got")
+		}
+
+		if errors.Is(dbErr, gorm.ErrRecordNotFound) {
+			err = InsertWordEntryToDb(b.db, wordEntry)
+			if err != nil {
+				log.Println("LoadWordEntry error: cannot insert word entry to db (seeker version returned): ", err.Error())
+				return wordEntry, nil
+			}
+			wordEntryDb, err := FindWordEntry(b.db, word)
+			if err != nil {
+				return wordEntryDb, errors.New("LoadWordEntry error: cannot load word entry from db  (seeker version returned): " + err.Error())
+			}
+		} else {
+			return wordEntry, errors.New("LoadWordEntry error: cannot load word entry from db  (seeker version returned): " + err.Error())
+		}
+	}
+	return wordEntry, nil
+}
+
+func (b *Bot) GetSeekerWordEntry(word string) (*WordEntry, error) {
 
 	retryCount := 3
 	var err error

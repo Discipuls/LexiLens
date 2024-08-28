@@ -1,14 +1,9 @@
-package main
+package seeker
 
 import (
 	"errors"
 	"strings"
 )
-
-type WordEntry struct {
-	Word        string            `json:"word"`
-	SpeechParts []SpeechPartEntry `json:"speechParts"`
-}
 
 func (wordEntry *WordEntry) addSpeechPart(speechPart *SpeechPartEntry) error {
 	wordEntry.SpeechParts = append(wordEntry.SpeechParts, *speechPart)
@@ -83,13 +78,18 @@ func normalizeWordExamplePieces(pieces *[]SentencePice) {
 	}
 }
 
+type WordEntry struct {
+	Word        string            `json:"word"`
+	SpeechParts []SpeechPartEntry `json:"speechParts"`
+}
+
 type SpeechPartEntry struct {
 	SpeechPart  string           `json:"SpeechPart"`
 	Definitions []WordDefinition `json:"Definitions"`
 }
 
 type WordDefinition struct {
-	Definition []SentencePice     `json:"Definition"`
+	Definition []DefinitionPiece  `json:"Definition"`
 	Examples   []WordUsageExample `json:"Examples"`
 }
 
@@ -98,6 +98,11 @@ type WordUsageExample struct {
 }
 
 type SentencePice struct {
+	Value            string `json:"value"`
+	ContainsMainWord bool   `json:"containsMainWord"`
+}
+
+type DefinitionPiece struct {
 	Value            string `json:"value"`
 	ContainsMainWord bool   `json:"containsMainWord"`
 }

@@ -1,14 +1,12 @@
 package bot
 
 import (
-	"errors"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/NicoNex/echotron/v3"
-	"gorm.io/gorm"
 )
 
 func (b *Bot) HandleMessage(message *echotron.Message) {
@@ -27,45 +25,39 @@ func (b *Bot) HandleMessage(message *echotron.Message) {
 }
 
 func (b *Bot) HandleStartSession(message *echotron.Message, amount uint) {
-	b.currentWord = 0
+	if len(b.StoredUsersWords) == 0 {
+		b.SendNoWordsStored()
+		return
+	}
+	b.currentWordIndex = 0
 	b.LoadSessionWords(amount)
-	b.sessionsWordCopy = make([]*BotWordEntry, len(b.sessionWords))
-	copy(b.sessionsWordCopy, b.sessionWords)
-	b.EditWordMessageToCurrent(message)
+	err := b.LoadSessionWordEntries()
+	if err != nil {
+		log.Println("HandleStartSession error: ", err.Error())
+		b.SendWentWrongMessage()
+		return
+	}
+	if len(b.sessionWords) == 0 {
+		b.SendNoSessionWords()
+		return
+	}
+	b.startSessionWords = make([]*UsersWord, len(b.sessionWords))
+	copy(b.startSessionWords, b.sessionWords)
+	b.SendFirstSessionWordMessage()
 }
 
 func (b *Bot) HandleWordMessage(word string) {
-	wordEntry, dbErr := FindWordEntry(b.db, word)
-	if dbErr != nil {
-		var err error
-		wordEntry, err = b.GetWordEntry(word)
-		if err != nil {
-			log.Println("HandleWordMessage error:", err.Error())
-			b.SendWentWrongMessage()
+	wordEntry, err := b.LoadWordEntry(word)
 
-			return
-		}
-		if len(wordEntry.SpeechParts) == 0 {
-			log.Println("Word not found")
-			b.SendWentWrongMessage()
-		}
-
-		if errors.Is(dbErr, gorm.ErrRecordNotFound) {
-			err = InsertWordEntryToDb(b.db, wordEntry)
-			if err != nil {
-				log.Println("HandleWordMessage error:", err.Error())
-				return
-			}
-			wordEntry, err = FindWordEntry(b.db, word)
-			if err != nil {
-				log.Println("HandleWordMessage error:", err.Error())
-
-			}
-		}
+	if err != nil {
+		log.Println("HandleWordMessage error: ", err.Error())
+		b.SendWentWrongMessage()
+		return
 	}
+
 	b.SendFirstWordEntryMessage(*wordEntry)
 	existsInUsersList := false
-	for _, w := range b.WordEntries {
+	for _, w := range b.StoredUsersWords {
 		if w.Word == wordEntry.Word {
 			existsInUsersList = true
 			break
@@ -73,73 +65,99 @@ func (b *Bot) HandleWordMessage(word string) {
 	}
 
 	if !existsInUsersList {
-		botWordEntry := BotWordEntry{
+		usersWord := UsersWord{
 			BotId: b.ID,
 			Word:  wordEntry.Word,
 		}
-		botWordEntry = *insertBotWordEntryToDbIfNotExists(b.db, botWordEntry)
+		usersWord = *insertSessionItemToDbIfNotExists(b.db, usersWord)
 
-		b.WordEntries = append(b.WordEntries, &botWordEntry)
+		b.StoredUsersWords = append(b.StoredUsersWords, &usersWord)
 	}
 
 }
 
 func (b *Bot) HandleSessionFinish(callbackQuery *echotron.CallbackQuery) {
-	for _, w := range b.sessionsWordCopy {
+	for _, w := range b.startSessionWords {
+		if w.reference != nil {
+			w.reference.sessionMistakes += w.sessionMistakes
+		}
+	}
+	for _, w := range b.startSessionWords {
 		w.LastSessionMistakes = w.sessionMistakes
 		w.IsNewWord = false
 		SaveBotWordEntryInDb(b.db, w)
 	}
 	b.EditMessageToCompleteSession(callbackQuery.Message)
-	//b.DeleteMessage(b.ChatID, callbackQuery.Message.ID)
 }
 
 func (b *Bot) HandleCallbackQuery(callbackQuery *echotron.CallbackQuery) {
 	b.AnswerCallbackQueryDefault(callbackQuery)
 	if callbackQuery.Data == RememberWordButtonData {
-		b.sessionWords[b.currentWord].rememberRating++
-		if b.sessionWords[b.currentWord].rememberRating > 0 {
-			b.sessionWords = removeBotWordEntry(b.sessionWords, int(b.currentWord))
-			b.currentWord--
+		b.sessionWords[b.currentWordIndex].rememberRating++
+		if b.sessionWords[b.currentWordIndex].rememberRating > 0 {
+			b.sessionWords = removeUsersWord(b.sessionWords, int(b.currentWordIndex))
+			b.currentWordIndex--
 		}
 
 		b.NextWord(callbackQuery)
 
 	} else if callbackQuery.Data == NotRememberWordButtonData {
-		b.sessionWords[b.currentWord].rememberRating--
-		b.sessionWords[b.currentWord].sessionMistakes++
+		b.sessionWords[b.currentWordIndex].rememberRating--
+		if b.sessionWords[b.currentWordIndex].rememberRating < -1 {
+			b.sessionWords[b.currentWordIndex].rememberRating = -1
+		}
+		b.sessionWords[b.currentWordIndex].sessionMistakes++
 		b.NextWord(callbackQuery)
 
 	} else if callbackQuery.Data == ShowWordButtonData {
-		//	log.Println(b.sessionWords[b.currentWord].rememberRating)
 		b.EditWordMessageToShowCurrent(callbackQuery.Message)
 
-	} else if callbackQuery.Data == SettingsData {
-		b.EditLastToNotifications(callbackQuery)
+	} else if callbackQuery.Data == SettingsButtonData {
+		b.EditMessageToSetting(callbackQuery)
 
 	} else if callbackQuery.Data == TurnOnNotificationsData {
 		b.Notifications = true
 		SaveBotToDb(b.db, b)
-		b.EditLastToNotifications(callbackQuery)
+		b.EditMessageToNotifications(callbackQuery)
 
 	} else if callbackQuery.Data == TurnOffNotificationsData {
 		b.Notifications = false
 		SaveBotToDb(b.db, b)
-		b.EditLastToNotifications(callbackQuery)
+		b.EditMessageToNotifications(callbackQuery)
 
 	} else if callbackQuery.Data == GoBackData {
 		b.EditLastMessageToStart(callbackQuery)
 
 	} else if callbackQuery.Data == NextWordButtonData {
 		b.NextWord(callbackQuery)
+
 	} else if callbackQuery.Data == LearnData {
 		b.EditMessageToStartSession(callbackQuery.Message)
+
 	} else if strings.Contains(callbackQuery.Data, WordsAmountDataLast) {
 		re := regexp.MustCompile(`\d+`)
 		digits := re.FindAllString(callbackQuery.Data, -1)
 		amount, _ := strconv.Atoi(digits[0])
-		log.Println(amount)
 		b.HandleStartSession(callbackQuery.Message, uint(amount))
+
+	} else if callbackQuery.Data == NotificationsSettingsData {
+		b.EditMessageToNotifications(callbackQuery)
+	} else if callbackQuery.Data == SessionSettingsData {
+		b.EditMessageToSessionSettings(callbackQuery)
+
+	} else if callbackQuery.Data == WordToDefinitionButtonData {
+		b.SessionSettings.WithWordToDefinitionCards = !b.SessionSettings.WithWordToDefinitionCards
+		SaveSessionOptionsToDb(b.db, &b.SessionSettings)
+		b.EditMessageToSessionSettings(callbackQuery)
+
+	} else if callbackQuery.Data == DefinitionToWordButtonData {
+		b.SessionSettings.WithDefinitionToWordCards = !b.SessionSettings.WithDefinitionToWordCards
+		SaveSessionOptionsToDb(b.db, &b.SessionSettings)
+		b.EditMessageToSessionSettings(callbackQuery)
+
+	} else if callbackQuery.Data == GoBackToSessionSettingsData {
+		b.EditMessageToSetting(callbackQuery)
+
 	} else {
 		log.Println("Error: Bot got unexpected callback query:", callbackQuery.Data)
 		b.SendStartMessage()
@@ -147,13 +165,13 @@ func (b *Bot) HandleCallbackQuery(callbackQuery *echotron.CallbackQuery) {
 }
 
 func (b *Bot) NextWord(callbackQuery *echotron.CallbackQuery) {
-	b.currentWord++
+	b.currentWordIndex++
 	if len(b.sessionWords) == 0 {
 		b.HandleSessionFinish(callbackQuery)
 		return
-	} else if int(b.currentWord) == len(b.sessionWords) {
-		b.currentWord = 0
+	} else if int(b.currentWordIndex) == len(b.sessionWords) {
+		b.currentWordIndex = 0
 	}
-	log.Println(b.currentWord)
+	log.Println(b.currentWordIndex)
 	b.EditWordMessageToCurrent(callbackQuery.Message)
 }
