@@ -12,6 +12,11 @@ import (
 func (b *Bot) HandleMessage(message *echotron.Message) {
 	if message.Text == "/start" {
 		b.SendStartMessage()
+		if !b.SessionSettings.WithDefinitionToWordCards && !b.SessionSettings.WithWordToDefinitionCards {
+			b.SessionSettings.WithDefinitionToWordCards = true
+			b.SessionSettings.WithWordToDefinitionCards = true
+			SaveBotToDb(b.db, b)
+		}
 	} else if message.Text == reviewCommand {
 		b.SendStartSessionMessage()
 	} else {
@@ -29,7 +34,6 @@ func (b *Bot) HandleStartSession(message *echotron.Message, amount uint) {
 		b.SendNoWordsStored()
 		return
 	}
-	b.currentWordIndex = 0
 	b.LoadSessionWords(amount)
 	err := b.LoadSessionWordEntries()
 	if err != nil {
@@ -37,12 +41,12 @@ func (b *Bot) HandleStartSession(message *echotron.Message, amount uint) {
 		b.SendWentWrongMessage()
 		return
 	}
-	if len(b.sessionWords) == 0 {
+	if len(b.SessionWords) == 0 {
 		b.SendNoSessionWords()
 		return
 	}
-	b.startSessionWords = make([]*UsersWord, len(b.sessionWords))
-	copy(b.startSessionWords, b.sessionWords)
+	b.sessionWordsQueue = make([]*UsersWord, len(b.SessionWords))
+	copy(b.sessionWordsQueue, b.SessionWords)
 	b.SendFirstSessionWordMessage()
 }
 
@@ -77,12 +81,12 @@ func (b *Bot) HandleWordMessage(word string) {
 }
 
 func (b *Bot) HandleSessionFinish(callbackQuery *echotron.CallbackQuery) {
-	for _, w := range b.startSessionWords {
+	for _, w := range b.SessionWords {
 		if w.reference != nil {
 			w.reference.sessionMistakes += w.sessionMistakes
 		}
 	}
-	for _, w := range b.startSessionWords {
+	for _, w := range b.SessionWords {
 		w.LastSessionMistakes = w.sessionMistakes
 		w.IsNewWord = false
 		SaveBotWordEntryInDb(b.db, w)
@@ -93,20 +97,24 @@ func (b *Bot) HandleSessionFinish(callbackQuery *echotron.CallbackQuery) {
 func (b *Bot) HandleCallbackQuery(callbackQuery *echotron.CallbackQuery) {
 	b.AnswerCallbackQueryDefault(callbackQuery)
 	if callbackQuery.Data == RememberWordButtonData {
-		b.sessionWords[b.currentWordIndex].rememberRating++
-		if b.sessionWords[b.currentWordIndex].rememberRating > 0 {
-			b.sessionWords = removeUsersWord(b.sessionWords, int(b.currentWordIndex))
-			b.currentWordIndex--
+		b.sessionWordsQueue[0].rememberRating++
+		if b.sessionWordsQueue[0].rememberRating < 1 {
+			b.sessionWordsQueue = append(b.sessionWordsQueue, b.sessionWordsQueue[0])
 		}
+		b.sessionWordsQueue = b.sessionWordsQueue[1:]
 
 		b.NextWord(callbackQuery)
 
 	} else if callbackQuery.Data == NotRememberWordButtonData {
-		b.sessionWords[b.currentWordIndex].rememberRating--
-		if b.sessionWords[b.currentWordIndex].rememberRating < -1 {
-			b.sessionWords[b.currentWordIndex].rememberRating = -1
+		b.sessionWordsQueue[0].rememberRating--
+		if b.sessionWordsQueue[0].rememberRating < -1 {
+			b.sessionWordsQueue[0].rememberRating = -1
 		}
-		b.sessionWords[b.currentWordIndex].sessionMistakes++
+		b.sessionWordsQueue[0].sessionMistakes++
+
+		b.sessionWordsQueue = append(b.sessionWordsQueue, b.sessionWordsQueue[0])
+		b.sessionWordsQueue = b.sessionWordsQueue[1:]
+
 		b.NextWord(callbackQuery)
 
 	} else if callbackQuery.Data == ShowWordButtonData {
@@ -165,13 +173,9 @@ func (b *Bot) HandleCallbackQuery(callbackQuery *echotron.CallbackQuery) {
 }
 
 func (b *Bot) NextWord(callbackQuery *echotron.CallbackQuery) {
-	b.currentWordIndex++
-	if len(b.sessionWords) == 0 {
+	if len(b.sessionWordsQueue) == 0 {
 		b.HandleSessionFinish(callbackQuery)
 		return
-	} else if int(b.currentWordIndex) == len(b.sessionWords) {
-		b.currentWordIndex = 0
 	}
-	log.Println(b.currentWordIndex)
 	b.EditWordMessageToCurrent(callbackQuery.Message)
 }

@@ -25,9 +25,8 @@ type Bot struct {
 	selfUsername       string       `gorm:"-"`
 	mode               string       `gorm:"-"`
 	seekerUrl          string       `gorm:"-"`
-	currentWordIndex   int          `gorm:"-"`
-	sessionWords       []*UsersWord `gorm:"-"`
-	startSessionWords  []*UsersWord `gorm:"-"`
+	sessionWordsQueue  []*UsersWord `gorm:"-"`
+	SessionWords       []*UsersWord `gorm:"-"`
 	sessionWordEntries []*WordEntry `gorm:"-"`
 }
 
@@ -93,6 +92,7 @@ type UsersWord struct {
 	IsNewWord           bool `gorm:"default:true"`
 	isFrontCard         bool
 	reference           *UsersWord
+	sessionIndex        int
 }
 
 type SessionOptions struct {

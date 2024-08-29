@@ -14,16 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func removeUsersWord(slice []*UsersWord, index int) []*UsersWord {
-	if index == 0 {
-		return slice[index+1:]
-	}
-	return append(slice[:index], slice[index+1:]...)
-}
-
 func (b *Bot) LoadSessionWordEntries() error {
 	b.sessionWordEntries = make([]*WordEntry, 0)
-	for _, w := range b.sessionWords {
+	for _, w := range b.SessionWords {
 		wordEntry, err := b.LoadWordEntry(w.Word)
 		if err != nil {
 			return errors.New("LoadSessionWordEntries error: " + err.Error())
@@ -34,7 +27,7 @@ func (b *Bot) LoadSessionWordEntries() error {
 }
 
 func (b *Bot) LoadSessionWords(amount uint) {
-	b.sessionWords = make([]*UsersWord, 0)
+	b.SessionWords = make([]*UsersWord, 0)
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(b.StoredUsersWords), func(i, j int) {
 		b.StoredUsersWords[i], b.StoredUsersWords[j] = b.StoredUsersWords[j], b.StoredUsersWords[i]
@@ -44,7 +37,7 @@ func (b *Bot) LoadSessionWords(amount uint) {
 		b.StoredUsersWords[i].sessionMistakes = 0
 		b.StoredUsersWords[i].rememberRating = 0
 		if w.IsNewWord {
-			b.sessionWords = append(b.sessionWords, w)
+			b.SessionWords = append(b.SessionWords, w)
 			b.StoredUsersWords[i].usedInSession = true
 			b.StoredUsersWords[i].rememberRating = -1
 			amount--
@@ -63,7 +56,7 @@ func (b *Bot) LoadSessionWords(amount uint) {
 			if amount == 0 {
 				break
 			}
-			b.sessionWords = append(b.sessionWords, w)
+			b.SessionWords = append(b.SessionWords, w)
 			b.StoredUsersWords[i].usedInSession = true
 			amount--
 		}
@@ -71,8 +64,8 @@ func (b *Bot) LoadSessionWords(amount uint) {
 	}
 	reversedSessionWords := make([]*UsersWord, 0)
 	if b.SessionSettings.WithWordToDefinitionCards {
-		reversedSessionWords = make([]*UsersWord, len(b.sessionWords))
-		for i, wordEntry := range b.sessionWords {
+		reversedSessionWords = make([]*UsersWord, len(b.SessionWords))
+		for i, wordEntry := range b.SessionWords {
 			reversedEntry := *wordEntry
 			reversedEntry.isFrontCard = true
 			reversedEntry.reference = wordEntry
@@ -81,15 +74,17 @@ func (b *Bot) LoadSessionWords(amount uint) {
 	}
 
 	if b.SessionSettings.WithDefinitionToWordCards {
-		b.sessionWords = append(b.sessionWords, reversedSessionWords...)
+		b.SessionWords = append(b.SessionWords, reversedSessionWords...)
 	} else {
-		b.sessionWords = reversedSessionWords
+		b.SessionWords = reversedSessionWords
 	}
 
-	rand.Shuffle(len(b.sessionWords), func(i, j int) {
-		b.sessionWords[i], b.sessionWords[j] = b.sessionWords[j], b.sessionWords[i]
+	rand.Shuffle(len(b.SessionWords), func(i, j int) {
+		b.SessionWords[i], b.SessionWords[j] = b.SessionWords[j], b.SessionWords[i]
 	})
-
+	for i := range b.SessionWords {
+		b.SessionWords[i].sessionIndex = i
+	}
 }
 
 func (b *Bot) LoadWordEntry(word string) (*WordEntry, error) {

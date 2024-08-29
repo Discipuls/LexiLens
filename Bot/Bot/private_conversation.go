@@ -90,11 +90,12 @@ func (b *Bot) SendReviewWordEntryMessage(wordEntry WordEntry) {
 }
 
 func (b *Bot) EditWordMessageToShowCurrent(message *echotron.Message) {
-	if int(b.currentWordIndex) >= len(b.sessionWords) {
-		log.Println("Error: Current word index is more then session words amount")
-		b.SendWentWrongMessage() //TODO fix
+	if len(b.sessionWordsQueue) == 0 {
+		log.Println("EditWordMessageToShowCurrent error: no words in session queue")
+		b.SendWentWrongMessage()
+		return
 	}
-	wordEntry := b.sessionWordEntries[b.currentWordIndex]
+	wordEntry := b.sessionWordEntries[b.sessionWordsQueue[0].sessionIndex]
 
 	messageText := wordEntry.ToHTML(&EntryFormatOptions{
 		ExamplesLimit:    2,
@@ -109,17 +110,18 @@ func (b *Bot) EditWordMessageToShowCurrent(message *echotron.Message) {
 				InlineKeyboard: b.generateRateWordKeyboard(),
 			},
 		})
+
 }
 
 func (b *Bot) SendFirstSessionWordMessage() {
-	if len(b.sessionWords) == 0 {
+	if len(b.sessionWordsQueue) == 0 {
 		log.Println("SendFirstSessionWordMessage error: b.sessionWords is empty")
 		return
 	}
-	currentBotWordEntry := b.sessionWords[b.currentWordIndex]
+	currentWord := b.sessionWordsQueue[0]
 
-	if currentBotWordEntry.isFrontCard {
-		b.SendMessage(currentBotWordEntry.Word, b.ChatID,
+	if currentWord.isFrontCard {
+		b.SendMessage(currentWord.Word, b.ChatID,
 			&echotron.MessageOptions{
 				ParseMode: echotron.HTML,
 				ReplyMarkup: echotron.InlineKeyboardMarkup{
@@ -127,7 +129,7 @@ func (b *Bot) SendFirstSessionWordMessage() {
 				},
 			})
 	} else {
-		wordEntry := b.sessionWordEntries[0]
+		wordEntry := b.sessionWordEntries[b.sessionWordsQueue[0].sessionIndex]
 
 		messageText := wordEntry.ToHTML(&EntryFormatOptions{
 			ExamplesLimit:    2,
@@ -146,13 +148,13 @@ func (b *Bot) SendFirstSessionWordMessage() {
 }
 
 func (b *Bot) EditWordMessageToCurrent(message *echotron.Message) {
-	if len(b.sessionWords) == 0 {
+	if len(b.sessionWordsQueue) == 0 {
 		log.Println("EditWordMessageToCurrent error: b.sessionWords is empty")
 		return
 	}
-	currentBotWordEntry := b.sessionWords[b.currentWordIndex]
-	if currentBotWordEntry.isFrontCard {
-		b.EditMessageText(currentBotWordEntry.Word, echotron.NewMessageID(b.ChatID, message.ID),
+	currentWord := b.sessionWordsQueue[0]
+	if currentWord.isFrontCard {
+		b.EditMessageText(currentWord.Word, echotron.NewMessageID(b.ChatID, message.ID),
 			&echotron.MessageTextOptions{
 				ParseMode: echotron.HTML,
 				ReplyMarkup: echotron.InlineKeyboardMarkup{
@@ -160,7 +162,7 @@ func (b *Bot) EditWordMessageToCurrent(message *echotron.Message) {
 				},
 			})
 	} else {
-		wordEntry := b.sessionWordEntries[b.currentWordIndex]
+		wordEntry := b.sessionWordEntries[b.sessionWordsQueue[0].sessionIndex]
 
 		messageText := wordEntry.ToHTML(&EntryFormatOptions{
 			ExamplesLimit:    2,

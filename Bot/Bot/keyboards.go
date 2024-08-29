@@ -112,7 +112,7 @@ func (b *Bot) generateStartSessionKeyboard() [][]echotron.InlineKeyboardButton {
 	keyboard := make([][]echotron.InlineKeyboardButton, 0)
 	keyboard = append(keyboard, make([]echotron.InlineKeyboardButton, 0))
 	amounts := []int{
-		1, 5, 10, 20, 50,
+		5, 10, 20, 50,
 	}
 	for _, amount := range amounts {
 		keyboard = append(keyboard, make([]echotron.InlineKeyboardButton, 0))
