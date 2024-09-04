@@ -226,16 +226,26 @@ func (b *Bot) SendStartSessionMessage() {
 		b.ChatID,
 		&echotron.MessageOptions{
 			ReplyMarkup: echotron.InlineKeyboardMarkup{
-				InlineKeyboard: b.generateStartSessionKeyboard(),
+				InlineKeyboard: b.generateWordsAmountKeyboard(),
 			},
 		})
 }
-func (b *Bot) EditMessageToStartSession(message *echotron.Message) {
+func (b *Bot) EditMessageToWordsAmount(message *echotron.Message) {
 	b.EditMessageText(howManyWordsText,
 		echotron.NewMessageID(b.ChatID, message.ID),
 		&echotron.MessageTextOptions{
 			ReplyMarkup: echotron.InlineKeyboardMarkup{
-				InlineKeyboard: b.generateStartSessionKeyboard(),
+				InlineKeyboard: b.generateWordsAmountKeyboard(),
+			},
+		})
+}
+
+func (b *Bot) EditMessageToNewRepeatChoice(message *echotron.Message) {
+	b.EditMessageText(NewRepeatQuestion,
+		echotron.NewMessageID(b.ChatID, message.ID),
+		&echotron.MessageTextOptions{
+			ReplyMarkup: echotron.InlineKeyboardMarkup{
+				InlineKeyboard: b.genereateNewRepeatKeyboard(),
 			},
 		})
 }

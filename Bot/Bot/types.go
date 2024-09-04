@@ -101,4 +101,7 @@ type SessionOptions struct {
 	WithDefinitionToWordCards bool
 	MaxDefinitionsCount       int
 	MaxExamplesCount          int
+	wordsAmount               int
+	repeatWords               bool
+	newWords                  bool
 }

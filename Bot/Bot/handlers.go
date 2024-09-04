@@ -29,12 +29,12 @@ func (b *Bot) HandleMessage(message *echotron.Message) {
 	}
 }
 
-func (b *Bot) HandleStartSession(message *echotron.Message, amount uint) {
+func (b *Bot) HandleStartSession(message *echotron.Message) {
 	if len(b.StoredUsersWords) == 0 {
 		b.SendNoWordsStored()
 		return
 	}
-	b.LoadSessionWords(amount)
+	b.LoadSessionWords()
 	err := b.LoadSessionWordEntries()
 	if err != nil {
 		log.Println("HandleStartSession error: ", err.Error())
@@ -140,13 +140,21 @@ func (b *Bot) HandleCallbackQuery(callbackQuery *echotron.CallbackQuery) {
 		b.NextWord(callbackQuery)
 
 	} else if callbackQuery.Data == LearnData {
-		b.EditMessageToStartSession(callbackQuery.Message)
+		b.EditMessageToNewRepeatChoice(callbackQuery.Message)
+	} else if callbackQuery.Data == NewWordsButtonData {
+		b.SessionSettings.newWords = true
+		b.EditMessageToWordsAmount(callbackQuery.Message)
+
+	} else if callbackQuery.Data == RepeatWordsButtonData {
+		b.SessionSettings.repeatWords = true
+		b.EditMessageToWordsAmount(callbackQuery.Message)
 
 	} else if strings.Contains(callbackQuery.Data, WordsAmountDataLast) {
 		re := regexp.MustCompile(`\d+`)
 		digits := re.FindAllString(callbackQuery.Data, -1)
 		amount, _ := strconv.Atoi(digits[0])
-		b.HandleStartSession(callbackQuery.Message, uint(amount))
+		b.SessionSettings.wordsAmount = amount
+		b.HandleStartSession(callbackQuery.Message)
 
 	} else if callbackQuery.Data == NotificationsSettingsData {
 		b.EditMessageToNotifications(callbackQuery)

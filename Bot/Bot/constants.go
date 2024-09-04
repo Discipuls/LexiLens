@@ -19,6 +19,9 @@ const (
 	SessionSettingsButtonText       = "Session"
 	WordToDefinitionButtonText      = `Word → Definition: `
 	DefinitionToWordButtonText      = `Definition → Word: `
+	RepeatWordsButtonText           = `Repeat`
+	NewWordsButtonText              = `Learn new`
+	NewRepeatQuestion               = `What words would you like to master?`
 )
 
 const (
@@ -38,6 +41,8 @@ const (
 	SessionSettingsData         = "SessionSettings"
 	WordToDefinitionButtonData  = `WordToDefinition: `
 	DefinitionToWordButtonData  = `DefinitionToWord: `
+	RepeatWordsButtonData       = `Repeat`
+	NewWordsButtonData          = `LearnNew`
 )
 
 const (

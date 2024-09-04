@@ -108,7 +108,7 @@ func (b *Bot) generateNextWordButton() echotron.InlineKeyboardButton {
 	}
 }
 
-func (b *Bot) generateStartSessionKeyboard() [][]echotron.InlineKeyboardButton {
+func (b *Bot) generateWordsAmountKeyboard() [][]echotron.InlineKeyboardButton {
 	keyboard := make([][]echotron.InlineKeyboardButton, 0)
 	keyboard = append(keyboard, make([]echotron.InlineKeyboardButton, 0))
 	amounts := []int{
@@ -184,6 +184,21 @@ func (b *Bot) GenerateSessionSettingsKeyboard() [][]echotron.InlineKeyboardButto
 	keyboard[2] = append(keyboard[2], echotron.InlineKeyboardButton{
 		Text:         GoBackButtonText,
 		CallbackData: GoBackToSessionSettingsData,
+	})
+	return keyboard
+}
+
+func (b *Bot) genereateNewRepeatKeyboard() [][]echotron.InlineKeyboardButton {
+	keyboard := make([][]echotron.InlineKeyboardButton, 0)
+	keyboard = append(keyboard, make([]echotron.InlineKeyboardButton, 0))
+	keyboard[0] = append(keyboard[0], echotron.InlineKeyboardButton{
+		Text:         NewWordsButtonText,
+		CallbackData: NewWordsButtonData,
+	})
+	keyboard = append(keyboard, make([]echotron.InlineKeyboardButton, 0))
+	keyboard[1] = append(keyboard[1], echotron.InlineKeyboardButton{
+		Text:         RepeatWordsButtonText,
+		CallbackData: RepeatWordsButtonData,
 	})
 	return keyboard
 }

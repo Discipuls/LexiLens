@@ -26,41 +26,45 @@ func (b *Bot) LoadSessionWordEntries() error {
 	return nil
 }
 
-func (b *Bot) LoadSessionWords(amount uint) {
+func (b *Bot) LoadSessionWords() {
+	amount := b.SessionSettings.wordsAmount
 	b.SessionWords = make([]*UsersWord, 0)
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(b.StoredUsersWords), func(i, j int) {
 		b.StoredUsersWords[i], b.StoredUsersWords[j] = b.StoredUsersWords[j], b.StoredUsersWords[i]
 	})
-	for i, w := range b.StoredUsersWords {
-		b.StoredUsersWords[i].usedInSession = false
-		b.StoredUsersWords[i].sessionMistakes = 0
-		b.StoredUsersWords[i].rememberRating = 0
-		if w.IsNewWord {
-			b.SessionWords = append(b.SessionWords, w)
-			b.StoredUsersWords[i].usedInSession = true
-			b.StoredUsersWords[i].rememberRating = -1
-			amount--
-			if amount == 0 {
-				break
+	if b.SessionSettings.newWords {
+		for i, w := range b.StoredUsersWords {
+			b.StoredUsersWords[i].usedInSession = false
+			b.StoredUsersWords[i].sessionMistakes = 0
+			b.StoredUsersWords[i].rememberRating = 0
+			if w.IsNewWord {
+				b.SessionWords = append(b.SessionWords, w)
+				b.StoredUsersWords[i].usedInSession = true
+				b.StoredUsersWords[i].rememberRating = -1
+				amount--
+				if amount == 0 {
+					break
+				}
 			}
-		}
 
+		}
 	}
-
-	sort.Slice(b.StoredUsersWords, func(i int, j int) bool {
-		return b.StoredUsersWords[i].LastSessionMistakes >= b.StoredUsersWords[j].LastSessionMistakes
-	})
-	for i, w := range b.StoredUsersWords {
-		if !w.usedInSession {
-			if amount == 0 {
-				break
+	if b.SessionSettings.repeatWords {
+		sort.Slice(b.StoredUsersWords, func(i int, j int) bool {
+			return b.StoredUsersWords[i].LastSessionMistakes >= b.StoredUsersWords[j].LastSessionMistakes
+		})
+		for i, w := range b.StoredUsersWords {
+			if !w.usedInSession {
+				if amount == 0 {
+					break
+				}
+				b.SessionWords = append(b.SessionWords, w)
+				b.StoredUsersWords[i].usedInSession = true
+				amount--
 			}
-			b.SessionWords = append(b.SessionWords, w)
-			b.StoredUsersWords[i].usedInSession = true
-			amount--
-		}
 
+		}
 	}
 	reversedSessionWords := make([]*UsersWord, 0)
 	if b.SessionSettings.WithWordToDefinitionCards {
