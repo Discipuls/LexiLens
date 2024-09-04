@@ -222,11 +222,11 @@ func (b *Bot) EditMessageToCompleteSession(message *echotron.Message) {
 }
 
 func (b *Bot) SendStartSessionMessage() {
-	b.SendMessage(howManyWordsText,
+	b.SendMessage(NewRepeatQuestion,
 		b.ChatID,
 		&echotron.MessageOptions{
 			ReplyMarkup: echotron.InlineKeyboardMarkup{
-				InlineKeyboard: b.generateWordsAmountKeyboard(),
+				InlineKeyboard: b.generateNewRepeatKeyboard(),
 			},
 		})
 }
@@ -245,7 +245,7 @@ func (b *Bot) EditMessageToNewRepeatChoice(message *echotron.Message) {
 		echotron.NewMessageID(b.ChatID, message.ID),
 		&echotron.MessageTextOptions{
 			ReplyMarkup: echotron.InlineKeyboardMarkup{
-				InlineKeyboard: b.genereateNewRepeatKeyboard(),
+				InlineKeyboard: b.generateNewRepeatKeyboard(),
 			},
 		})
 }

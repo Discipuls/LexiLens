@@ -188,7 +188,7 @@ func (b *Bot) GenerateSessionSettingsKeyboard() [][]echotron.InlineKeyboardButto
 	return keyboard
 }
 
-func (b *Bot) genereateNewRepeatKeyboard() [][]echotron.InlineKeyboardButton {
+func (b *Bot) generateNewRepeatKeyboard() [][]echotron.InlineKeyboardButton {
 	keyboard := make([][]echotron.InlineKeyboardButton, 0)
 	keyboard = append(keyboard, make([]echotron.InlineKeyboardButton, 0))
 	keyboard[0] = append(keyboard[0], echotron.InlineKeyboardButton{
